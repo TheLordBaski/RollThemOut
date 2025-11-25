@@ -31,6 +31,12 @@ public class WeaponItem : AttachableItem
     [SerializeField] private float meleeSwingAngle = 90f;
     [Tooltip("For melee weapons: range of the melee attack")]
     [SerializeField] private float meleeRange = 2f;
+    [Tooltip("Velocity divisor for contact damage calculation (higher = less damage from velocity)")]
+    [SerializeField] private float contactDamageVelocityDivisor = 5f;
+    [Tooltip("Minimum contact damage multiplier")]
+    [SerializeField] private float minContactDamageMultiplier = 0.5f;
+    [Tooltip("Maximum contact damage multiplier")]
+    [SerializeField] private float maxContactDamageMultiplier = 2f;
     
     private float nextFireTime = 0f;
     private Transform currentTarget;
@@ -318,9 +324,12 @@ public class WeaponItem : AttachableItem
         Enemy enemy = collision.gameObject.GetComponent<Enemy>();
         if (enemy != null)
         {
-            // Deal contact damage based on impact velocity
+            // Deal contact damage based on impact velocity using configurable values
             float impactVelocity = collision.relativeVelocity.magnitude;
-            float contactDamage = damage * Mathf.Clamp(impactVelocity / 5f, 0.5f, 2f);
+            float velocityMultiplier = Mathf.Clamp(impactVelocity / contactDamageVelocityDivisor, 
+                                                    minContactDamageMultiplier, 
+                                                    maxContactDamageMultiplier);
+            float contactDamage = damage * velocityMultiplier;
             
             enemy.TakeDamage(contactDamage);
             Debug.Log($"{weaponType} contact damage: {contactDamage}");
