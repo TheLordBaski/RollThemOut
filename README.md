@@ -40,6 +40,9 @@
 - **Rocket Launcher**: Propels you backward when firing!
 - **Laser**: Lightweight, continuous beam
 - **Shotgun**: Wide spread, moderate recoil
+- **Sword**: Melee weapon, arc swing attack
+- **Axe**: Heavy melee, high damage, slow swing
+- **Spear**: Long-range melee thrust attack
 
 ### 🛡️ Armor Types
 - **Light Armor**: Basic protection, minimal weight

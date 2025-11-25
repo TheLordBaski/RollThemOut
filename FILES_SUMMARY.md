@@ -33,6 +33,8 @@ Abstract base class for all items that can attach to the player.
 - Attachment lifecycle (OnAttached/OnDetached)
 - Abstract method for derived classes to implement effects
 - Mass tracking
+- Toggleable collider enable/disable on attachment
+- Public SetCollidersEnabled() method for runtime control
 
 ---
 
@@ -45,12 +47,17 @@ Implements various weapon types with auto-targeting and firing.
 - Rocket Launcher (massive recoil)
 - Laser (lightweight, continuous)
 - Shotgun (spread pattern)
+- Sword (melee, arc swing attack)
+- Axe (melee, high damage, narrow arc)
+- Spear (melee, long range thrust)
 
 **Features:**
 - Auto-fire at nearest enemy
 - Weapon-specific firing patterns
 - Recoil application to player (physics-based)
-- Target detection and tracking
+- Target detection and tracking (with fallback for unset layer mask)
+- Melee weapons with arc-based attacks
+- Contact damage for melee weapons
 - Debug visualization
 
 ---
