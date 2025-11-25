@@ -10,12 +10,22 @@ public abstract class AttachableItem : MonoBehaviour
     [Header("Physics")]
     [SerializeField] private Rigidbody rb;
     
+    [Header("Collider Settings")]
+    [Tooltip("Whether to disable colliders when item is attached to player")]
+    [SerializeField] private bool disableCollidersOnAttach = true;
+    
     private bool isAttached = false;
     private PlayerController attachedToPlayer;
+    private Collider[] itemColliders;
     
     public float Mass => mass;
     public bool IsAttached => isAttached;
     public string ItemName => itemName;
+    public bool DisableCollidersOnAttach 
+    { 
+        get => disableCollidersOnAttach; 
+        set => disableCollidersOnAttach = value; 
+    }
     
     protected virtual void Awake()
     {
@@ -32,6 +42,9 @@ public abstract class AttachableItem : MonoBehaviour
         rb.mass = mass;
         rb.useGravity = true;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
+        
+        // Cache colliders for toggling
+        itemColliders = GetComponentsInChildren<Collider>();
     }
     
     public virtual void OnAttached(PlayerController player)
@@ -39,9 +52,14 @@ public abstract class AttachableItem : MonoBehaviour
         isAttached = true;
         attachedToPlayer = player;
         
-        // Disable gravity and collision for attached item
+        // Disable gravity for attached item
         rb.useGravity = false;
-        // rb.isKinematic = true;
+        
+        // Optionally disable colliders based on setting
+        if (disableCollidersOnAttach)
+        {
+            SetCollidersEnabled(false);
+        }
         
         Debug.Log($"{itemName} attached to player!");
     }
@@ -55,7 +73,26 @@ public abstract class AttachableItem : MonoBehaviour
         rb.useGravity = true;
         rb.isKinematic = false;
         
+        // Re-enable colliders
+        SetCollidersEnabled(true);
+        
         Debug.Log($"{itemName} detached from player!");
+    }
+    
+    /// <summary>
+    /// Enable or disable all colliders on this item
+    /// </summary>
+    public void SetCollidersEnabled(bool enabled)
+    {
+        if (itemColliders == null) return;
+        
+        foreach (Collider col in itemColliders)
+        {
+            if (col != null)
+            {
+                col.enabled = enabled;
+            }
+        }
     }
     
     protected virtual void Update()
