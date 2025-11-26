@@ -89,8 +89,9 @@ public abstract class AttachableItem : MonoBehaviour
         rb.useGravity = true;
         rb.isKinematic = false;
         
-        // Re-enable colliders
+        // Re-enable colliders and remove trigger mode
         SetCollidersEnabled(true);
+        SetCollidersAsTriggers(false);
         
         Debug.Log($"{itemName} detached from player!");
     }

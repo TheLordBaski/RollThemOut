@@ -63,11 +63,11 @@ public class WeaponItem : AttachableItem
     {
         base.Awake();
         
-        // Melee weapons should use triggers for contact damage when colliders would be disabled
+        // Melee weapons should convert colliders to triggers for contact damage
         if (IsMeleeWeapon)
         {
-            // Keep colliders enabled but as triggers
-            DisableCollidersOnAttach = false;
+            // Don't disable colliders, but convert them to triggers
+            DisableCollidersOnAttach = true;
             UseTriggerWhenDisabled = true;
         }
     }
