@@ -21,6 +21,14 @@ public class WeaponItem : AttachableItem
     [SerializeField] private float recoilForce = 5f;
     [SerializeField] private float range = 10f;
     
+    [Header("Projectile Settings")]
+    [Tooltip("Projectile prefab to spawn (for ranged weapons)")]
+    [SerializeField] private GameObject projectilePrefab;
+    [Tooltip("Projectile spawn point (barrel position). If null, uses weapon position.")]
+    [SerializeField] private Transform barrelTransform;
+    [Tooltip("Projectile speed")]
+    [SerializeField] private float projectileSpeed = 20f;
+    
     [Header("Auto-Fire")]
     [SerializeField] private bool autoFire = true;
     [SerializeField] private float detectionRadius = 8f;
@@ -55,10 +63,12 @@ public class WeaponItem : AttachableItem
     {
         base.Awake();
         
-        // Melee weapons should keep colliders enabled for contact damage
+        // Melee weapons should convert colliders to triggers for contact damage
         if (IsMeleeWeapon)
         {
-            DisableCollidersOnAttach = false;
+            // Don't disable colliders, but convert them to triggers
+            DisableCollidersOnAttach = true;
+            UseTriggerWhenDisabled = true;
         }
     }
     
@@ -72,20 +82,30 @@ public class WeaponItem : AttachableItem
     {
         if (!autoFire) return;
         
-        // Find nearest enemy
-        FindTarget();
-        
-        // Fire at target (check cooldown)
-        if (currentTarget != null && Time.time >= nextFireTime)
-        {
-            Fire();
-            nextFireTime = Time.time + 1f / fireRate;
-        }
-        
-        // Melee weapons also check for continuous contact damage
+        // Ranged weapons fire continuously forward, melee weapons need targets
         if (IsMeleeWeapon)
         {
+            // Melee weapons still need to find targets for active swings
+            FindTarget();
+            
+            // Fire at target (check cooldown)
+            if (currentTarget != null && Time.time >= nextFireTime)
+            {
+                Fire();
+                nextFireTime = Time.time + 1f / fireRate;
+            }
+            
+            // Melee weapons also check for continuous contact damage via triggers
             CheckMeleeContact();
+        }
+        else
+        {
+            // Ranged weapons fire continuously forward (no target needed)
+            if (Time.time >= nextFireTime)
+            {
+                Fire();
+                nextFireTime = Time.time + 1f / fireRate;
+            }
         }
     }
     
@@ -131,9 +151,21 @@ public class WeaponItem : AttachableItem
     
     private void Fire()
     {
-        if (currentTarget == null) return;
+        // For ranged weapons, fire forward from barrel position
+        // For melee weapons, fire at current target
+        Vector3 direction;
         
-        Vector3 direction = (currentTarget.position - transform.position).normalized;
+        if (IsMeleeWeapon)
+        {
+            // Melee weapons attack toward target
+            if (currentTarget == null) return;
+            direction = (currentTarget.position - transform.position).normalized;
+        }
+        else
+        {
+            // Ranged weapons fire forward from barrel
+            direction = GetBarrelForward();
+        }
         
         // Apply weapon-specific behavior
         switch (weaponType)
@@ -171,30 +203,79 @@ public class WeaponItem : AttachableItem
         }
     }
     
+    /// <summary>
+    /// Get the forward direction for barrel firing
+    /// </summary>
+    private Vector3 GetBarrelForward()
+    {
+        if (barrelTransform != null)
+        {
+            return barrelTransform.forward;
+        }
+        return transform.forward;
+    }
+    
+    /// <summary>
+    /// Get the barrel position for projectile spawning
+    /// </summary>
+    private Vector3 GetBarrelPosition()
+    {
+        if (barrelTransform != null)
+        {
+            return barrelTransform.position;
+        }
+        return transform.position;
+    }
+    
+    /// <summary>
+    /// Spawn a projectile in the given direction
+    /// </summary>
+    private void SpawnProjectile(Vector3 direction, float damageMultiplier = 1f)
+    {
+        if (projectilePrefab == null)
+        {
+            Debug.LogWarning($"{weaponType} has no projectile prefab assigned!");
+            return;
+        }
+        
+        Vector3 spawnPosition = GetBarrelPosition();
+        GameObject projectileObj = Instantiate(projectilePrefab, spawnPosition, Quaternion.LookRotation(direction));
+        
+        Projectile projectile = projectileObj.GetComponent<Projectile>();
+        if (projectile != null)
+        {
+            projectile.Initialize(direction, projectileSpeed, damage * damageMultiplier);
+        }
+    }
+    
     private void FireCannon(Vector3 direction)
     {
         // Spawn heavy projectile
-        Debug.DrawRay(transform.position, direction * range, Color.red, 0.5f);
-        Debug.Log($"Cannon fired! Heavy impact ahead.");
+        SpawnProjectile(direction, 1.5f); // Cannons deal more damage
+        Debug.DrawRay(GetBarrelPosition(), direction * range, Color.red, 0.5f);
+        Debug.Log($"Cannon fired forward!");
     }
     
     private void FireMachineGun(Vector3 direction)
     {
         // Rapid fire projectile
-        Debug.DrawRay(transform.position, direction * range, Color.yellow, 0.1f);
+        SpawnProjectile(direction, 0.8f); // Machine gun deals less damage per shot
+        Debug.DrawRay(GetBarrelPosition(), direction * range, Color.yellow, 0.1f);
     }
     
     private void FireRocket(Vector3 direction)
     {
         // Rocket with explosion - propels player backward!
-        Debug.DrawRay(transform.position, direction * range, Color.orange, 1f);
-        Debug.Log($"Rocket launched! Player propelled backward!");
+        SpawnProjectile(direction, 2f); // Rockets deal high damage
+        Debug.DrawRay(GetBarrelPosition(), direction * range, Color.orange, 1f);
+        Debug.Log($"Rocket launched forward! Player propelled backward!");
     }
     
     private void FireLaser(Vector3 direction)
     {
-        // Continuous beam
-        Debug.DrawRay(transform.position, direction * range, Color.cyan, 0.1f);
+        // Continuous beam - could use raycast for instant hit
+        SpawnProjectile(direction, 0.6f); // Laser deals sustained lower damage
+        Debug.DrawRay(GetBarrelPosition(), direction * range, Color.cyan, 0.1f);
     }
     
     private void FireShotgun(Vector3 direction)
@@ -203,7 +284,8 @@ public class WeaponItem : AttachableItem
         for (int i = -2; i <= 2; i++)
         {
             Vector3 spread = Quaternion.Euler(0, i * 10f, 0) * direction;
-            Debug.DrawRay(transform.position, spread * range * 0.7f, Color.red, 0.3f);
+            SpawnProjectile(spread, 0.5f); // Each pellet deals less damage
+            Debug.DrawRay(GetBarrelPosition(), spread * range * 0.7f, Color.red, 0.3f);
         }
     }
     
@@ -281,7 +363,7 @@ public class WeaponItem : AttachableItem
     }
     
     /// <summary>
-    /// Check for melee contact damage (for rolling into enemies)
+    /// Check for melee contact damage - damage is handled by OnTriggerEnter or OnCollisionEnter
     /// </summary>
     private void CheckMeleeContact()
     {
@@ -294,7 +376,7 @@ public class WeaponItem : AttachableItem
         float playerSpeed = playerRb.linearVelocity.magnitude;
         if (playerSpeed < 1f) return; // Need to be moving to deal contact damage
         
-        // Contact damage is handled by OnCollisionEnter below
+        // Contact damage is handled by OnTriggerEnter (when using triggers) or OnCollisionEnter (when using colliders)
     }
     
     /// <summary>
@@ -314,7 +396,7 @@ public class WeaponItem : AttachableItem
     }
     
     /// <summary>
-    /// Handle collision damage for melee weapons
+    /// Handle collision damage for melee weapons (when using regular colliders)
     /// </summary>
     private void OnCollisionEnter(Collision collision)
     {
@@ -333,6 +415,39 @@ public class WeaponItem : AttachableItem
             
             enemy.TakeDamage(contactDamage);
             Debug.Log($"{weaponType} contact damage: {contactDamage}");
+        }
+    }
+    
+    /// <summary>
+    /// Handle trigger-based damage for melee weapons (when using triggers instead of colliders)
+    /// </summary>
+    private void OnTriggerEnter(Collider other)
+    {
+        if (!IsAttached || !IsMeleeWeapon) return;
+        
+        // Check if we hit an enemy
+        Enemy enemy = other.GetComponent<Enemy>();
+        if (enemy != null)
+        {
+            // For trigger-based damage, use player velocity since we won't have collision velocity
+            if (player == null) return;
+            
+            Rigidbody playerRb = player.GetComponent<Rigidbody>();
+            if (playerRb == null) return;
+            
+            float playerSpeed = playerRb.linearVelocity.magnitude;
+            
+            // Only deal damage if moving fast enough
+            if (playerSpeed < 1f) return;
+            
+            // Calculate damage based on velocity
+            float velocityMultiplier = Mathf.Clamp(playerSpeed / contactDamageVelocityDivisor, 
+                                                    minContactDamageMultiplier, 
+                                                    maxContactDamageMultiplier);
+            float contactDamage = damage * velocityMultiplier;
+            
+            enemy.TakeDamage(contactDamage);
+            Debug.Log($"{weaponType} trigger contact damage: {contactDamage}");
         }
     }
     

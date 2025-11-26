@@ -13,6 +13,8 @@ public abstract class AttachableItem : MonoBehaviour
     [Header("Collider Settings")]
     [Tooltip("Whether to disable colliders when item is attached to player")]
     [SerializeField] private bool disableCollidersOnAttach = true;
+    [Tooltip("Whether to use triggers when colliders are disabled (for melee damage detection)")]
+    [SerializeField] private bool useTriggerWhenDisabled = false;
     
     private bool isAttached = false;
     private PlayerController attachedToPlayer;
@@ -25,6 +27,12 @@ public abstract class AttachableItem : MonoBehaviour
     { 
         get => disableCollidersOnAttach; 
         set => disableCollidersOnAttach = value; 
+    }
+    
+    public bool UseTriggerWhenDisabled
+    {
+        get => useTriggerWhenDisabled;
+        set => useTriggerWhenDisabled = value;
     }
     
     protected virtual void Awake()
@@ -58,7 +66,15 @@ public abstract class AttachableItem : MonoBehaviour
         // Optionally disable colliders based on setting
         if (disableCollidersOnAttach)
         {
-            SetCollidersEnabled(false);
+            if (useTriggerWhenDisabled)
+            {
+                // Convert to triggers instead of disabling
+                SetCollidersAsTriggers(true);
+            }
+            else
+            {
+                SetCollidersEnabled(false);
+            }
         }
         
         Debug.Log($"{itemName} attached to player!");
@@ -73,8 +89,9 @@ public abstract class AttachableItem : MonoBehaviour
         rb.useGravity = true;
         rb.isKinematic = false;
         
-        // Re-enable colliders
+        // Re-enable colliders and remove trigger mode
         SetCollidersEnabled(true);
+        SetCollidersAsTriggers(false);
         
         Debug.Log($"{itemName} detached from player!");
     }
@@ -91,6 +108,22 @@ public abstract class AttachableItem : MonoBehaviour
             if (col != null)
             {
                 col.enabled = enabled;
+            }
+        }
+    }
+    
+    /// <summary>
+    /// Convert all colliders to triggers or back to normal colliders
+    /// </summary>
+    public void SetCollidersAsTriggers(bool asTriggers)
+    {
+        if (itemColliders == null) return;
+        
+        foreach (Collider col in itemColliders)
+        {
+            if (col != null)
+            {
+                col.isTrigger = asTriggers;
             }
         }
     }

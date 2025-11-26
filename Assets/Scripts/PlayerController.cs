@@ -5,9 +5,9 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     [Header("Movement")]
-    [SerializeField] private float moveForce = 10f;
+    [SerializeField] private float moveForce = 15f; // Increased from 10f for more responsive movement
     [SerializeField] private float maxSpeed = 5f;
-    [SerializeField] private float slowdownFactor = 0.98f;
+    [SerializeField] private float slowdownFactor = 0.95f; // Reduced from 0.98f for quicker stopping
     
     [Header("Physics")]
     [SerializeField] private Rigidbody rb;
@@ -35,7 +35,7 @@ public class PlayerController : MonoBehaviour
         // Set up physics properties
         rb.mass = baseMass;
         rb.useGravity = true;
-        rb.linearDamping = 0.5f;
+        rb.linearDamping = 0.3f; // Reduced from 0.5f for more responsive movement
         rb.angularDamping = 0.5f;
         
         UpdateCenterOfMass();
@@ -66,8 +66,9 @@ public class PlayerController : MonoBehaviour
         if (moveInput.magnitude > 0.1f)
         {
             // Apply force based on input
+            // Use ForceMode.Acceleration for more responsive movement regardless of mass
             Vector3 force = moveInput * moveForce;
-            rb.AddForce(force, ForceMode.Force);
+            rb.AddForce(force, ForceMode.Acceleration);
         }
         else
         {
