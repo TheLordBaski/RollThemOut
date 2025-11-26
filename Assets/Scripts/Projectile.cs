@@ -12,6 +12,8 @@ public class Projectile : MonoBehaviour
     [SerializeField] private float lifetime = 3f;
     [SerializeField] private bool explodeOnImpact = false;
     [SerializeField] private float explosionRadius = 2f;
+    [Tooltip("Makes hit detection more forgiving by increasing effective collision radius")]
+    [SerializeField] private float hitDetectionRadius = 0.5f;
     
     [Header("Visual")]
     [SerializeField] private TrailRenderer trailRenderer;
@@ -55,6 +57,59 @@ public class Projectile : MonoBehaviour
         }
     }
     
+    void FixedUpdate()
+    {
+        // Add forgiving hit detection by checking for nearby enemies
+        if (hitDetectionRadius > 0)
+        {
+            CheckForgivingHitDetection();
+        }
+    }
+    
+    /// <summary>
+    /// Check for enemies near the projectile for forgiving hit detection
+    /// </summary>
+    private void CheckForgivingHitDetection()
+    {
+        Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, hitDetectionRadius);
+        
+        foreach (Collider col in nearbyColliders)
+        {
+            // Skip player and other projectiles
+            if (col.CompareTag("Player") || col.GetComponent<Projectile>() != null)
+                continue;
+            
+            // Check if it's an enemy
+            Enemy enemy = col.GetComponent<Enemy>();
+            if (enemy != null)
+            {
+                // Hit enemy!
+                HitEnemy(enemy, transform.position);
+                return; // Destroy after hitting one enemy
+            }
+        }
+    }
+    
+    private void HitEnemy(Enemy enemy, Vector3 hitPoint)
+    {
+        enemy.TakeDamage(damage);
+        
+        // Explosion effect
+        if (explodeOnImpact)
+        {
+            Explode(hitPoint);
+        }
+        
+        // Spawn hit effect
+        if (hitEffectPrefab != null)
+        {
+            Instantiate(hitEffectPrefab, hitPoint, Quaternion.identity);
+        }
+        
+        // Destroy projectile
+        Destroy(gameObject);
+    }
+    
     void OnCollisionEnter(Collision collision)
     {
         // Don't collide with player or other projectiles
@@ -69,19 +124,19 @@ public class Projectile : MonoBehaviour
         Enemy enemy = collision.gameObject.GetComponent<Enemy>();
         if (enemy != null)
         {
-            enemy.TakeDamage(damage);
+            HitEnemy(enemy, collision.contacts[0].point);
+            return;
         }
         
-        // Explosion effect
-        if (explodeOnImpact)
-        {
-            Explode(collision.contacts[0].point);
-        }
-        
-        // Spawn hit effect
+        // Hit something else (wall, etc) - spawn effects and destroy
         if (hitEffectPrefab != null)
         {
             Instantiate(hitEffectPrefab, collision.contacts[0].point, Quaternion.LookRotation(collision.contacts[0].normal));
+        }
+        
+        if (explodeOnImpact)
+        {
+            Explode(collision.contacts[0].point);
         }
         
         // Destroy projectile
