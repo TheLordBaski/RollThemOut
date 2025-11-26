@@ -60,6 +60,7 @@ public class Projectile : MonoBehaviour
     void FixedUpdate()
     {
         // Add forgiving hit detection by checking for nearby enemies
+        // Note: For performance with many projectiles, consider object pooling
         if (hitDetectionRadius > 0)
         {
             CheckForgivingHitDetection();
@@ -71,6 +72,8 @@ public class Projectile : MonoBehaviour
     /// </summary>
     private void CheckForgivingHitDetection()
     {
+        // Use OverlapSphere for forgiving hit detection
+        // This runs every physics frame - consider optimizing if you have many projectiles
         Collider[] nearbyColliders = Physics.OverlapSphere(transform.position, hitDetectionRadius);
         
         foreach (Collider col in nearbyColliders)

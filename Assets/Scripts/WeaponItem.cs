@@ -363,7 +363,7 @@ public class WeaponItem : AttachableItem
     }
     
     /// <summary>
-    /// Check for melee contact damage (for rolling into enemies)
+    /// Check for melee contact damage - damage is handled by OnTriggerEnter or OnCollisionEnter
     /// </summary>
     private void CheckMeleeContact()
     {
@@ -376,7 +376,7 @@ public class WeaponItem : AttachableItem
         float playerSpeed = playerRb.linearVelocity.magnitude;
         if (playerSpeed < 1f) return; // Need to be moving to deal contact damage
         
-        // Contact damage is handled by OnCollisionEnter below
+        // Contact damage is handled by OnTriggerEnter (when using triggers) or OnCollisionEnter (when using colliders)
     }
     
     /// <summary>
