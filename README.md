@@ -99,26 +99,26 @@ Create UI > Canvas:
 Create child panels (Panel UI elements):
 
 **Planning Panel:**
-- TextMeshPro: "LEFT CLICK - Place Bounce Point\nRIGHT CLICK - Remove Last Point\nSPACE - Fire Bullet"
+- Text (Unity UI Text): "LEFT CLICK - Place Bounce Point\nRIGHT CLICK - Remove Last Point\nSPACE - Fire Bullet"
 - Assign to UIManager's `planningPanel`
 
 **Executing Panel:**
-- TextMeshPro for enemy counter
+- Text (Unity UI Text) for enemy counter
 - Assign text to UIManager's `enemiesKilledText`
 - Assign panel to UIManager's `executingPanel`
 
 **Replay Panel:**
-- TextMeshPro: "KILL CAM REPLAY"
+- Text (Unity UI Text): "KILL CAM REPLAY"
 - Assign to UIManager's `replayPanel`
 
 **Win Panel:**
-- TextMeshPro: "MISSION COMPLETE!"
+- Text (Unity UI Text): "MISSION COMPLETE!"
 - Button: "Restart"
 - Assign button to UIManager's `restartButton`
 - Assign panel to UIManager's `winPanel`
 
 **Lose Panel:**
-- TextMeshPro: "MISSION FAILED"
+- Text (Unity UI Text): "MISSION FAILED"
 - Button: "Restart"
 - Assign panel to UIManager's `losePanel`
 

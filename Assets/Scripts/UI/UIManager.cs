@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 namespace ChronoSniper
 {
@@ -16,11 +15,11 @@ namespace ChronoSniper
         [SerializeField] private GameObject losePanel;
 
         [Header("Planning UI")]
-        [SerializeField] private TextMeshProUGUI instructionsText;
-        [SerializeField] private TextMeshProUGUI bouncePointCountText;
+        [SerializeField] private Text instructionsText;
+        [SerializeField] private Text bouncePointCountText;
 
         [Header("Executing UI")]
-        [SerializeField] private TextMeshProUGUI enemiesKilledText;
+        [SerializeField] private Text enemiesKilledText;
 
         [Header("Win/Lose UI")]
         [SerializeField] private Button restartButton;
