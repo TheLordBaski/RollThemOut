@@ -42,10 +42,6 @@ namespace ChronoSniper
             {
                 lookAction = playerInput.actions["Look"];
             }
-
-            // Lock cursor
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
         }
 
         private void OnEnable()

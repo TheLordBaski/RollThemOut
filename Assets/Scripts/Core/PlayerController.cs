@@ -77,8 +77,8 @@ namespace ChronoSniper
         private void HandleInput()
         {
             // Place bounce point with left click or Attack action
-            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame ||
-                attackAction != null && attackAction.WasPressedThisFrame())
+            if ((Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame) ||
+                (attackAction != null && attackAction.WasPressedThisFrame()))
             {
                 TryPlaceBouncePoint();
             }

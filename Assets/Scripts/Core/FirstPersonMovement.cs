@@ -39,10 +39,12 @@ namespace ChronoSniper
         [SerializeField] private float slideDuration = 1f;
         [SerializeField] private float slideDeceleration = 5f;
         [SerializeField] private bool canSlideOnSlopes = true;
+        [SerializeField] private float slopeSlideBoostMultiplier = 0.1f;
 
         [Header("References")]
         [SerializeField] private Transform orientation;
         [SerializeField] private CapsuleCollider capsuleCollider;
+        [SerializeField] private LayerMask standUpCheckLayers = -1;
 
         private Rigidbody rb;
         private GroundDetector groundDetector;
@@ -233,7 +235,7 @@ namespace ChronoSniper
             // Add slope boost if sliding on slope
             if (canSlideOnSlopes && groundDetector.OnSlope)
             {
-                slideVelocity += Vector3.down * groundDetector.CurrentSlopeAngle * 0.1f;
+                slideVelocity += Vector3.down * groundDetector.CurrentSlopeAngle * slopeSlideBoostMultiplier;
             }
             
             rb.velocity = new Vector3(slideVelocity.x, rb.velocity.y, slideVelocity.z);
@@ -350,17 +352,20 @@ namespace ChronoSniper
         {
             if (currentState == MovementState.Sliding)
             {
-                if (crouchAction != null && crouchAction.IsPressed() && CanStandUp())
+                if (crouchAction != null && crouchAction.IsPressed())
                 {
+                    // Player is still holding crouch
                     currentState = MovementState.Crouching;
                 }
                 else if (CanStandUp())
                 {
+                    // Player released crouch and can stand
                     currentState = MovementState.Walking;
                     targetHeight = standHeight;
                 }
                 else
                 {
+                    // Cannot stand up, stay crouched
                     currentState = MovementState.Crouching;
                 }
             }
@@ -384,7 +389,7 @@ namespace ChronoSniper
             Vector3 checkPosition = transform.position + Vector3.up * crouchHeight;
             float checkDistance = standHeight - crouchHeight + 0.2f;
             
-            return !Physics.Raycast(checkPosition, Vector3.up, checkDistance, ~0, QueryTriggerInteraction.Ignore);
+            return !Physics.Raycast(checkPosition, Vector3.up, checkDistance, standUpCheckLayers, QueryTriggerInteraction.Ignore);
         }
 
         private void OnDrawGizmosSelected()
