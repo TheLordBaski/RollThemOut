@@ -68,16 +68,6 @@ namespace ChronoSniper
 
         private void HandleGameStateInput()
         {
-            // Check if movement should be disabled based on game state
-            if (GameManager.Instance != null && !enableMovementInPlanning)
-            {
-                if (GameManager.Instance.CurrentState == GameState.Planning)
-                {
-                    // Movement is always enabled now, but you can disable if needed
-                    // movement.enabled = false;
-                }
-            }
-
             // Handle cursor unlock
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {

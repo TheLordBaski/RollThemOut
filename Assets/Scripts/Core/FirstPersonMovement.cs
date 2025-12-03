@@ -213,21 +213,21 @@ namespace ChronoSniper
             float accel = groundDetector.IsGrounded ? acceleration : acceleration * airControl;
             
             // Smoothly accelerate to target velocity
-            Vector3 horizontalVelocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+            Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
             Vector3 velocityDiff = targetVelocity - horizontalVelocity;
             
             float decel = moveDirection.magnitude > 0.1f ? accel : deceleration;
             Vector3 velocityChange = velocityDiff * decel * deltaTime;
             
             // Apply velocity change
-            currentVelocity = rb.velocity + new Vector3(velocityChange.x, 0f, velocityChange.z);
-            rb.velocity = currentVelocity;
+            currentVelocity = rb.linearVelocity + new Vector3(velocityChange.x, 0f, velocityChange.z);
+            rb.linearVelocity = currentVelocity;
         }
 
         private void ApplySlideMovement(float deltaTime)
         {
             // Continue sliding in the initial direction with deceleration
-            float currentSlideSpeed = new Vector3(rb.velocity.x, 0f, rb.velocity.z).magnitude;
+            float currentSlideSpeed = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z).magnitude;
             float newSpeed = Mathf.Max(currentSlideSpeed - slideDeceleration * deltaTime, crouchSpeed);
             
             Vector3 slideVelocity = slideDirection * newSpeed;
@@ -238,7 +238,7 @@ namespace ChronoSniper
                 slideVelocity += Vector3.down * groundDetector.CurrentSlopeAngle * slopeSlideBoostMultiplier;
             }
             
-            rb.velocity = new Vector3(slideVelocity.x, rb.velocity.y, slideVelocity.z);
+            rb.linearVelocity = new Vector3(slideVelocity.x, rb.linearVelocity.y, slideVelocity.z);
         }
 
         private void ApplyGravity(float deltaTime)
@@ -247,24 +247,24 @@ namespace ChronoSniper
             if (groundDetector.IsGrounded && !groundDetector.OnSlope)
             {
                 // Apply small downward force to keep grounded
-                rb.velocity = new Vector3(rb.velocity.x, -2f, rb.velocity.z);
+                rb.linearVelocity = new Vector3(rb.linearVelocity.x, -2f, rb.linearVelocity.z);
             }
             else if (!groundDetector.IsGrounded)
             {
                 // Apply custom gravity
-                rb.velocity += Vector3.down * gravity * deltaTime;
+                rb.linearVelocity += Vector3.down * gravity * deltaTime;
             }
         }
 
         private void LimitVelocity()
         {
-            Vector3 horizontalVelocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+            Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
             float maxSpeed = GetMaxSpeed();
 
             if (horizontalVelocity.magnitude > maxSpeed)
             {
                 Vector3 limitedVelocity = horizontalVelocity.normalized * maxSpeed;
-                rb.velocity = new Vector3(limitedVelocity.x, rb.velocity.y, limitedVelocity.z);
+                rb.linearVelocity = new Vector3(limitedVelocity.x, rb.linearVelocity.y, limitedVelocity.z);
             }
         }
 
@@ -280,7 +280,7 @@ namespace ChronoSniper
                     return slideSpeed;
                 case MovementState.InAir:
                     // Maintain last ground speed in air
-                    return Mathf.Min(new Vector3(rb.velocity.x, 0f, rb.velocity.z).magnitude, sprintSpeed);
+                    return Mathf.Min(new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z).magnitude, sprintSpeed);
                 default:
                     return walkSpeed;
             }
@@ -304,10 +304,10 @@ namespace ChronoSniper
             if (canJump && currentState != MovementState.Sliding)
             {
                 // Cancel vertical velocity before jumping
-                rb.velocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+                rb.linearVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
                 
                 // Apply jump force
-                rb.velocity += Vector3.up * jumpForce;
+                rb.linearVelocity += Vector3.up * jumpForce;
 
                 if (!groundDetector.IsGrounded)
                 {
@@ -323,7 +323,7 @@ namespace ChronoSniper
             // Start slide if moving fast enough
             if (groundDetector.IsGrounded && 
                 currentState == MovementState.Sprinting &&
-                new Vector3(rb.velocity.x, 0f, rb.velocity.z).magnitude >= slideMinSpeed)
+                new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z).magnitude >= slideMinSpeed)
             {
                 StartSlide();
             }
@@ -344,7 +344,7 @@ namespace ChronoSniper
             slideTimer = slideDuration;
             
             // Store current movement direction
-            Vector3 horizontalVelocity = new Vector3(rb.velocity.x, 0f, rb.velocity.z);
+            Vector3 horizontalVelocity = new Vector3(rb.linearVelocity.x, 0f, rb.linearVelocity.z);
             slideDirection = horizontalVelocity.normalized;
         }
 
