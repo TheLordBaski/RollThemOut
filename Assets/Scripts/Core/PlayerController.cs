@@ -1,14 +1,18 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using System.Collections.Generic;
 
 namespace ChronoSniper
 {
+    /// <summary>
+    /// Player controller that handles shooting mechanics and bounce point placement
+    /// Now works with FirstPersonController for movement and camera
+    /// </summary>
     public class PlayerController : MonoBehaviour
     {
-        [Header("Camera Settings")]
-        [SerializeField] private float mouseSensitivity = 2f;
-        [SerializeField] private float maxVerticalAngle = 80f;
+        [Header("References")]
         [SerializeField] private Transform cameraTransform;
+        [SerializeField] private FirstPersonController firstPersonController;
 
         [Header("Shooting Settings")]
         [SerializeField] private float maxRayDistance = 100f;
@@ -20,15 +24,27 @@ namespace ChronoSniper
         [SerializeField] private Color trajectoryColor = Color.cyan;
         [SerializeField] private float trajectoryLineWidth = 0.05f;
 
-        private float verticalRotation = 0f;
         private List<BouncePoint> bouncePoints = new List<BouncePoint>();
         private LineRenderer trajectoryLine;
+        private PlayerInput playerInput;
+        private InputAction attackAction;
+
+        private void Awake()
+        {
+            playerInput = GetComponent<PlayerInput>();
+            if (playerInput != null)
+            {
+                attackAction = playerInput.actions["Attack"];
+            }
+
+            if (firstPersonController == null)
+            {
+                firstPersonController = GetComponent<FirstPersonController>();
+            }
+        }
 
         private void Start()
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-
             SetupTrajectoryLine();
         }
 
@@ -53,48 +69,31 @@ namespace ChronoSniper
                 return;
             }
 
-            HandleCameraRotation();
             HandleInput();
             UpdateTrajectoryVisualization();
         }
 
-        private void HandleCameraRotation()
-        {
-            float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity;
-            float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity;
-
-            transform.Rotate(Vector3.up * mouseX);
-
-            verticalRotation -= mouseY;
-            verticalRotation = Mathf.Clamp(verticalRotation, -maxVerticalAngle, maxVerticalAngle);
-            cameraTransform.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
-        }
 
         private void HandleInput()
         {
-            // Place bounce point
-            if (Input.GetMouseButtonDown(0))
+            // Place bounce point with left click or Attack action
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame ||
+                attackAction != null && attackAction.WasPressedThisFrame())
             {
                 TryPlaceBouncePoint();
             }
 
-            // Remove last bounce point
-            if (Input.GetMouseButtonDown(1))
+            // Remove last bounce point with right click
+            if (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame)
             {
                 RemoveLastBouncePoint();
             }
 
-            // Fire bullet
-            if (Input.GetKeyDown(KeyCode.Space) && !GameManager.Instance.BulletFired)
+            // Fire bullet with Space (Jump action in Planning state acts as Fire)
+            if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame && 
+                !GameManager.Instance.BulletFired)
             {
                 FireBullet();
-            }
-
-            // Escape to unlock cursor
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
             }
         }
 
