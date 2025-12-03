@@ -38,7 +38,7 @@ namespace StarterAssets
 		public bool grounded = true;
 		[Tooltip("Useful for rough ground")]
 		public float groundedOffset = -0.14f;
-		[Tooltip("The radius of the grounded check. Should match the radius of the CharacterController")]
+		[Tooltip("The radius of the grounded check. Should match the radius of the Rigidbody's Capsule Collider")]
 		public float groundedRadius = 0.5f;
 		[Tooltip("What layers the character uses as ground")]
 		public LayerMask groundLayers;
@@ -124,8 +124,8 @@ namespace StarterAssets
 		private void FixedUpdate()
 		{
 			// Physics-based operations go in FixedUpdate
-			JumpAndGravity();
 			GroundedCheck();
+			JumpAndGravity();
 			Move();
 		}
 
@@ -207,12 +207,12 @@ namespace StarterAssets
 				inputDirection = transform.right * _input.move.x + transform.forward * _input.move.y;
 			}
 
-			// Calculate target position using Rigidbody
-			Vector3 targetVelocity = inputDirection.normalized * _speed;
-			targetVelocity.y = _rigidbody.velocity.y; // Preserve vertical velocity
+			// Calculate horizontal velocity and combine with vertical velocity from JumpAndGravity
+			Vector3 horizontalVelocity = inputDirection.normalized * _speed;
+			Vector3 finalVelocity = new Vector3(horizontalVelocity.x, _verticalVelocity, horizontalVelocity.z);
 			
-			// Apply velocity to rigidbody
-			_rigidbody.velocity = targetVelocity;
+			// Apply combined velocity to rigidbody
+			_rigidbody.velocity = finalVelocity;
 		}
 
 		private void JumpAndGravity()
@@ -261,11 +261,6 @@ namespace StarterAssets
 			{
 				_verticalVelocity += gravity * Time.unscaledDeltaTime;
 			}
-
-			// Apply vertical velocity to Rigidbody
-			Vector3 velocity = _rigidbody.velocity;
-			velocity.y = _verticalVelocity;
-			_rigidbody.velocity = velocity;
 		}
 
 		private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
