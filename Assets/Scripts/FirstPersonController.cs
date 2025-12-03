@@ -109,6 +109,7 @@ namespace StarterAssets
 			_rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
 			_rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
 			_rigidbody.constraints = RigidbodyConstraints.FreezeRotation; // Prevent tipping over
+			_rigidbody.useGravity = false; // Gravity is handled manually by the script
 
 			// reset our timeouts on start
 			_jumpTimeoutDelta = jumpTimeout;
@@ -159,6 +160,7 @@ namespace StarterAssets
 				cinemachineCameraTarget.transform.localRotation = Quaternion.Euler(_cinemachineTargetPitch, 0.0f, 0.0f);
 
 				// rotate the player left and right using Rigidbody rotation
+				// Note: MoveRotation in Update provides immediate response; actual rotation applied at next physics step
 				Quaternion deltaRotation = Quaternion.Euler(Vector3.up * _rotationVelocity);
 				_rigidbody.MoveRotation(_rigidbody.rotation * deltaRotation);
 			}
