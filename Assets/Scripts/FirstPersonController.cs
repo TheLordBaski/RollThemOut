@@ -5,7 +5,7 @@ using UnityEngine.InputSystem;
 
 namespace StarterAssets
 {
-	[RequireComponent(typeof(CharacterController))]
+	[RequireComponent(typeof(Rigidbody))]
 #if ENABLE_INPUT_SYSTEM
 	[RequireComponent(typeof(PlayerInput))]
 #endif
@@ -68,7 +68,7 @@ namespace StarterAssets
 #if ENABLE_INPUT_SYSTEM
 		private PlayerInput _playerInput;
 #endif
-		private CharacterController _controller;
+		private Rigidbody _rigidbody;
 		private StarterAssetsInputs _input;
 		private GameObject _mainCamera;
 
@@ -97,13 +97,18 @@ namespace StarterAssets
 
 		private void Start()
 		{
-			_controller = GetComponent<CharacterController>();
+			_rigidbody = GetComponent<Rigidbody>();
 			_input = GetComponent<StarterAssetsInputs>();
 #if ENABLE_INPUT_SYSTEM
 			_playerInput = GetComponent<PlayerInput>();
 #else
 			Debug.LogError( "Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
 #endif
+
+			// Configure Rigidbody for proper FPS controller behavior
+			_rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
+			_rigidbody.collisionDetectionMode = CollisionDetectionMode.Continuous;
+			_rigidbody.constraints = RigidbodyConstraints.FreezeRotation; // Prevent tipping over
 
 			// reset our timeouts on start
 			_jumpTimeoutDelta = jumpTimeout;
@@ -112,6 +117,13 @@ namespace StarterAssets
 
 		private void Update()
 		{
+			// Camera rotation stays in Update for smooth input response
+			CameraRotation();
+		}
+
+		private void FixedUpdate()
+		{
+			// Physics-based operations go in FixedUpdate
 			JumpAndGravity();
 			GroundedCheck();
 			Move();
@@ -119,7 +131,7 @@ namespace StarterAssets
 
 		private void LateUpdate()
 		{
-			CameraRotation();
+			// LateUpdate is no longer needed for camera rotation
 		}
 
 		private void GroundedCheck()
@@ -134,8 +146,8 @@ namespace StarterAssets
 			// if there is an input
 			if (_input.look.sqrMagnitude >= Threshold)
 			{
-				//Don't multiply mouse input by Time.deltaTime
-				float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
+				//Don't multiply mouse input by Time.unscaledDeltaTime
+				float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.unscaledDeltaTime;
 				
 				_cinemachineTargetPitch += _input.look.y * rotationSpeed * deltaTimeMultiplier;
 				_rotationVelocity = _input.look.x * rotationSpeed * deltaTimeMultiplier;
@@ -146,8 +158,9 @@ namespace StarterAssets
 				// Update Cinemachine camera target pitch
 				cinemachineCameraTarget.transform.localRotation = Quaternion.Euler(_cinemachineTargetPitch, 0.0f, 0.0f);
 
-				// rotate the player left and right
-				transform.Rotate(Vector3.up * _rotationVelocity);
+				// rotate the player left and right using Rigidbody rotation
+				Quaternion deltaRotation = Quaternion.Euler(Vector3.up * _rotationVelocity);
+				_rigidbody.MoveRotation(_rigidbody.rotation * deltaRotation);
 			}
 		}
 
@@ -163,7 +176,7 @@ namespace StarterAssets
 			if (_input.move == Vector2.zero) targetSpeed = 0.0f;
 
 			// a reference to the players current horizontal velocity
-			float currentHorizontalSpeed = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z).magnitude;
+			float currentHorizontalSpeed = new Vector3(_rigidbody.velocity.x, 0.0f, _rigidbody.velocity.z).magnitude;
 
 			float speedOffset = 0.1f;
 			float inputMagnitude = _input.analogMovement ? _input.move.magnitude : 1f;
@@ -173,7 +186,7 @@ namespace StarterAssets
 			{
 				// creates curved result rather than a linear one giving a more organic speed change
 				// note T in Lerp is clamped, so we don't need to clamp our speed
-				_speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude, Time.deltaTime * speedChangeRate);
+				_speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude, Time.unscaledDeltaTime * speedChangeRate);
 
 				// round speed to 3 decimal places
 				_speed = Mathf.Round(_speed * 1000f) / 1000f;
@@ -194,8 +207,12 @@ namespace StarterAssets
 				inputDirection = transform.right * _input.move.x + transform.forward * _input.move.y;
 			}
 
-			// move the player
-			_controller.Move(inputDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+			// Calculate target position using Rigidbody
+			Vector3 targetVelocity = inputDirection.normalized * _speed;
+			targetVelocity.y = _rigidbody.velocity.y; // Preserve vertical velocity
+			
+			// Apply velocity to rigidbody
+			_rigidbody.velocity = targetVelocity;
 		}
 
 		private void JumpAndGravity()
@@ -221,7 +238,7 @@ namespace StarterAssets
 				// jump timeout
 				if (_jumpTimeoutDelta >= 0.0f)
 				{
-					_jumpTimeoutDelta -= Time.deltaTime;
+					_jumpTimeoutDelta -= Time.unscaledDeltaTime;
 				}
 			}
 			else
@@ -232,7 +249,7 @@ namespace StarterAssets
 				// fall timeout
 				if (_fallTimeoutDelta >= 0.0f)
 				{
-					_fallTimeoutDelta -= Time.deltaTime;
+					_fallTimeoutDelta -= Time.unscaledDeltaTime;
 				}
 
 				// if we are not grounded, do not jump
@@ -242,8 +259,13 @@ namespace StarterAssets
 			// apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
 			if (_verticalVelocity < _terminalVelocity)
 			{
-				_verticalVelocity += gravity * Time.deltaTime;
+				_verticalVelocity += gravity * Time.unscaledDeltaTime;
 			}
+
+			// Apply vertical velocity to Rigidbody
+			Vector3 velocity = _rigidbody.velocity;
+			velocity.y = _verticalVelocity;
+			_rigidbody.velocity = velocity;
 		}
 
 		private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
