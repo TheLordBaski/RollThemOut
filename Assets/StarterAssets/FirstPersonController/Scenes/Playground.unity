@@ -156,7 +156,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46052a6c12d98e246984ff098dcb31d7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChronoSniper.FirstPersonController
-  movement: {fileID: 0}
+  movement: {fileID: 67262667}
   cameraController: {fileID: 67262670}
   enableMovementInPlanning: 0
 --- !u!114 &67262666
@@ -283,7 +283,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ChronoSniper.FirstPersonCamera
   cameraTransform: {fileID: 565588073}
-  orientation: {fileID: 565588073}
+  orientation: {fileID: 1290459948}
   mouseSensitivity: 2
   gamepadSensitivity: 100
   maxVerticalAngle: 90
